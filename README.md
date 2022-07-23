@@ -138,6 +138,7 @@ class FM(tf.keras.Model):
         return y_hat, self.w, self.V
 ```
 
+
 ```python
 ### 모델링
 
@@ -177,4 +178,29 @@ def func_fm(train_df, test_df):
   
 # model[1].save('/content/drive/MyDrive/temp/mymodel')
 # tf.keras.models.load_model('/content/drive/MyDrive/temp/mymodel')
+```
+
+
+# 학습한 모델을 이용해 예측하는 함수 생성
+```python
+def make_pred_list(batch, pro_id, model, test_pred, song_book, scaler, le):
+    test_pred_scaled = scaler.transform(test_pred)
+    batch = batch
+    test_pred_tensor = tf.data.Dataset.from_tensor_slices(
+            (tf.cast(test_pred_scaled, tf.float32))).batch(batch)
+
+    rslt_pred = []
+    for x in test_pred_tensor:
+        rslt_pred.append(model(x)[0])
+    rslt = sum([i.numpy().tolist() for i in rslt_pred], [])
+
+    test_pred['pred'] = rslt
+
+    test_pred_dropped = test_pred.drop(['genre','release'], axis=1)
+    test_pred_merged = pd.merge(test_pred_dropped, song_book, left_on='song_id', right_on='song_id', how='left')
+
+    p_id = pro_id
+    test_pred_merged['Program']=pronumtoname(p_id, le)
+
+    return test_pred_merged
 ```
